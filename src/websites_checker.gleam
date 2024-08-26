@@ -49,7 +49,7 @@ fn get_config_filename() -> String {
 }
 
 fn process_website_recursively(website: config.Website) {
-  crawler.crawl_url(website.url, website.pattern)
-  process.sleep(website.interval)
+  let result = crawler.crawl_url(website.url, website.pattern)
+  process.sleep(website.interval * 1000)
   process_website_recursively(website)
 }

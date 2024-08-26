@@ -67,10 +67,6 @@ fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
                         Error(_) -> 0
                       }
 
-                      let url = case d |> dict.get("url") {
-                        Ok(value) -> value
-                        Error(_) -> ""
-                      }
                       Website(
                         url: get_dict_optional_key(d, "url"),
                         interval: interval,
