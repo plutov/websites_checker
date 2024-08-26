@@ -8,13 +8,13 @@ websites.yaml:
 
 ```yaml
 websites:
-	- url: https://packagemain.tech
-		interval: 10
-	- url: https://pliutau.com
-		interval: 15
-	- url: https://news.ycombinator.com
-		interval: 30
-		pattern: gleam
+  - url: https://packagemain.tech
+    interval: 10
+  - url: https://pliutau.com
+    interval: 15
+  - url: https://news.ycombinator.com
+    interval: 30
+    pattern: gleam
 ```
 
 ### Prerequisites
