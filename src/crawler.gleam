@@ -4,10 +4,6 @@ import gleam/http/request
 import gleam/io
 import gleam/string
 
-pub type CrawlError {
-  CrawlError(message: String)
-}
-
 pub type CrawlResult {
   CrawlResult(
     url: String,
@@ -19,6 +15,7 @@ pub type CrawlResult {
   )
 }
 
+// It always returns a CrawlResult, even if there is an error.
 pub fn crawl_url(url: String, pattern: String) -> CrawlResult {
   let started_at = birl.now() |> birl.to_unix
   io.println("Crawling url: " <> url)

@@ -8,6 +8,7 @@ import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
+import sqlight
 
 pub fn main() {
   let db_name = get_db_name()
@@ -25,14 +26,20 @@ pub fn main() {
   }
 
   // Run database migrations
-  case database.with_connection(db_name, database.run_migrations) {
+  let db_conn = case database.connect(db_name) {
+    Ok(conn) -> conn
+    Error(e) ->
+      panic as string.append("Failed to connect to database: ", e.message)
+  }
+
+  case database.run_migrations(db_conn) {
     Ok(_) -> io.println("Database migrations ran successfully")
     Error(e) -> panic as string.append("Failed to run migrations: ", e.message)
   }
 
   // Start process for each website
   list.each(c.websites, fn(w) {
-    process.start(fn() { process_website_recursively(w) }, True)
+    process.start(fn() { process_website_recursively(db_conn, w) }, True)
   })
 
   process.sleep_forever()
@@ -48,8 +55,16 @@ fn get_config_filename() -> String {
   |> result.unwrap("./websites.yaml")
 }
 
-fn process_website_recursively(website: config.Website) {
+fn process_website_recursively(
+  db_conn: sqlight.Connection,
+  website: config.Website,
+) {
   let result = crawler.crawl_url(website.url, website.pattern)
+  case database.save_result(db_conn, result) {
+    Ok(_) ->
+      io.println(string.append("Result saved successfully: ", website.url))
+    Error(e) -> io.println(string.append("Failed to save result: ", e.message))
+  }
   process.sleep(website.interval * 1000)
-  process_website_recursively(website)
+  process_website_recursively(db_conn, website)
 }

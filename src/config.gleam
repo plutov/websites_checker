@@ -48,6 +48,8 @@ fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
                           let #(key, value) = pair
                           let val_str = case value {
                             glaml.DocNodeStr(val_str) -> val_str
+                            glaml.DocNodeInt(val_int) ->
+                              val_int |> int.to_string
                             _ -> ""
                           }
                           let key_str = case key {
@@ -64,7 +66,7 @@ fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
                         int.base_parse(get_dict_optional_key(d, "interval"), 10)
                       {
                         Ok(value) -> value
-                        Error(_) -> 0
+                        Error(_) -> 10
                       }
 
                       Website(
