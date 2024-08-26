@@ -31,3 +31,9 @@ CONFIG=./websites.yaml \
 DB_NAME=./websites.sqlite3 \
 gleam run
 ```
+
+### Run tests
+
+```bash
+gleam test
+```

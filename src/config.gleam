@@ -31,7 +31,7 @@ fn open_config_file(filename: String) -> Result(String, ConfigError) {
   }
 }
 
-fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
+pub fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
   case glaml.parse_string(data) {
     Ok(doc) -> {
       let doc = glaml.doc_node(doc)
