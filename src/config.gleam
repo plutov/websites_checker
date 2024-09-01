@@ -17,7 +17,8 @@ pub type ConfigError {
   ConfigError(message: String)
   ReadError
   ParseError
-  MissingWebsitesKey
+  MissingKey(which: String)
+  InvalidValue
   InvalidFileFormat
 }
 
@@ -38,34 +39,42 @@ pub fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
 
   use node <- result.try(
     glaml.sugar(doc, "websites")
-    |> result.replace_error(MissingWebsitesKey),
+    |> result.map_error(from_glaml_error),
   )
 
   use items <- require_doc_node_seq(node)
 
-  let websites =
-    list.map(items, fn(item) {
-      let url = case glaml.sugar(item, "url") {
-        Ok(glaml.DocNodeStr(val_str)) -> val_str
-        _ -> ""
-      }
-      let pattern = case glaml.sugar(item, "pattern") {
-        Ok(glaml.DocNodeStr(val_str)) -> val_str
-        _ -> ""
-      }
-      let interval =
-        case glaml.sugar(item, "interval") {
-          Ok(glaml.DocNodeStr(val_str)) -> int.parse(val_str)
-          Ok(glaml.DocNodeInt(val_int)) -> Ok(val_int)
-          _ -> Error(Nil)
-        }
-        |> result.unwrap(or: 10)
+  list.try_map(items, fn(item) {
+    use url <- result.try(get_string_key(item, "url"))
 
-      Website(url:, interval:, pattern:)
-    })
-    |> list.filter(fn(w) { w.url != "" })
+    Ok(Website(
+      url:,
+      interval: get_interval(item)
+        |> result.unwrap(or: 10),
+      pattern: item
+        |> get_string_key("pattern")
+        |> result.unwrap(or: ""),
+    ))
+  })
+}
 
-  Ok(websites)
+fn get_string_key(node, key) {
+  case glaml.sugar(node, key) {
+    Ok(glaml.DocNodeStr(value)) -> Ok(value)
+    Ok(_) -> Error(InvalidValue)
+    Error(error) -> Error(from_glaml_error(error))
+  }
+}
+
+fn get_interval(node) {
+  case glaml.sugar(node, "interval") {
+    Ok(glaml.DocNodeInt(val_int)) -> Ok(val_int)
+    Ok(glaml.DocNodeStr(val_str)) ->
+      int.parse(val_str)
+      |> result.replace_error(InvalidValue)
+    Ok(_) -> Error(InvalidValue)
+    Error(error) -> Error(from_glaml_error(error))
+  }
 }
 
 fn require_doc_node_seq(
@@ -75,5 +84,12 @@ fn require_doc_node_seq(
   case node {
     glaml.DocNodeSeq(items) -> callback(items)
     _ -> Error(InvalidFileFormat)
+  }
+}
+
+fn from_glaml_error(error) {
+  case error {
+    glaml.NodeNotFound(which) -> MissingKey(which)
+    glaml.InvalidSugar -> panic as "invalid key syntax"
   }
 }
