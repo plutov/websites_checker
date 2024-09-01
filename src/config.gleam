@@ -34,28 +34,23 @@ pub fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
     glaml.parse_string(data)
     |> result.replace_error(ParseError),
   )
-
-  let doc = glaml.doc_node(doc)
-
-  use node <- result.try(
-    glaml.sugar(doc, "websites")
-    |> result.map_error(from_glaml_error),
+  use items <- result.try(
+    doc.root
+    |> glaml.sugar("websites")
+    |> result.map_error(from_glaml_error)
+    |> result.then(require_doc_node_seq),
   )
+  use item <- list.try_map(items)
+  use url <- result.map(get_string_key(item, "url"))
 
-  use items <- require_doc_node_seq(node)
-
-  list.try_map(items, fn(item) {
-    use url <- result.try(get_string_key(item, "url"))
-
-    Ok(Website(
-      url:,
-      interval: get_interval(item)
-        |> result.unwrap(or: 10),
-      pattern: item
-        |> get_string_key("pattern")
-        |> result.unwrap(or: ""),
-    ))
-  })
+  Website(
+    url:,
+    interval: get_interval(item)
+      |> result.unwrap(or: 10),
+    pattern: item
+      |> get_string_key("pattern")
+      |> result.unwrap(or: ""),
+  )
 }
 
 fn get_string_key(node, key) {
@@ -77,12 +72,9 @@ fn get_interval(node) {
   }
 }
 
-fn require_doc_node_seq(
-  node: DocNode,
-  callback: fn(List(DocNode)) -> Result(b, ConfigError),
-) {
+fn require_doc_node_seq(node: DocNode) -> Result(List(DocNode), ConfigError) {
   case node {
-    glaml.DocNodeSeq(items) -> callback(items)
+    glaml.DocNodeSeq(items) -> Ok(items)
     _ -> Error(InvalidFileFormat)
   }
 }
