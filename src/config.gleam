@@ -22,15 +22,10 @@ pub type ConfigError {
 }
 
 pub fn load(filename: String) -> Result(Config, ConfigError) {
-  use file_data <- result.try(open_config_file(filename))
-  use websites <- result.try(parse_config_file(file_data))
-
-  Ok(Config(websites))
-}
-
-fn open_config_file(filename: String) -> Result(String, ConfigError) {
   simplifile.read(filename)
   |> result.replace_error(ReadError)
+  |> result.then(parse_config_file)
+  |> result.map(Config)
 }
 
 pub fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
