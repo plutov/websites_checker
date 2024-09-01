@@ -15,6 +15,10 @@ pub type Website {
 
 pub type ConfigError {
   ConfigError(message: String)
+  ReadError
+  ParseError
+  MissingWebsitesKey
+  InvalidFileFormat
 }
 
 pub fn load(filename: String) -> Result(Config, ConfigError) {
@@ -25,27 +29,21 @@ pub fn load(filename: String) -> Result(Config, ConfigError) {
 }
 
 fn open_config_file(filename: String) -> Result(String, ConfigError) {
-  case simplifile.read(filename) {
-    Ok(data) -> Ok(data)
-    Error(_) -> Error(ConfigError(message: "Failed to read config file"))
-  }
+  simplifile.read(filename)
+  |> result.replace_error(ReadError)
 }
 
 pub fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
   use doc <- result.try(
     glaml.parse_string(data)
-    |> result.map_error(fn(_) {
-      ConfigError(message: "Failed to parse config file")
-    }),
+    |> result.replace_error(ParseError),
   )
 
   let doc = glaml.doc_node(doc)
 
   use node <- result.try(
     glaml.get(doc, [glaml.Map("websites")])
-    |> result.map_error(fn(_) {
-      ConfigError(message: "websites key not found in config file")
-    }),
+    |> result.replace_error(MissingWebsitesKey),
   )
 
   use items <- require_doc_node_seq(node)
@@ -106,6 +104,6 @@ fn require_doc_node_seq(
 ) {
   case node {
     glaml.DocNodeSeq(items) -> callback(items)
-    _ -> Error(ConfigError(message: "Invalid config file format"))
+    _ -> Error(InvalidFileFormat)
   }
 }
