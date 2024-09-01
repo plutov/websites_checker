@@ -37,7 +37,7 @@ pub fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
   let doc = glaml.doc_node(doc)
 
   use node <- result.try(
-    glaml.get(doc, [glaml.Map("websites")])
+    glaml.sugar(doc, "websites")
     |> result.replace_error(MissingWebsitesKey),
   )
 
@@ -45,42 +45,23 @@ pub fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
 
   let websites =
     list.map(items, fn(item) {
-      case item {
-        glaml.DocNodeMap(pairs) -> {
-          let tuples =
-            list.map(pairs, fn(pair) {
-              let #(key, value) = pair
-              let val_str = case value {
-                glaml.DocNodeStr(val_str) -> val_str
-                glaml.DocNodeInt(val_int) -> val_int |> int.to_string
-                _ -> ""
-              }
-              let key_str = case key {
-                glaml.DocNodeStr(key_str) -> {
-                  key_str
-                }
-                _ -> ""
-              }
-              #(key_str, val_str)
-            })
-
-          let d = dict.from_list(tuples)
-
-          Website(
-            url: d
-              |> dict.get("url")
-              |> result.unwrap(""),
-            interval: d
-              |> dict.get("interval")
-              |> result.then(int.parse)
-              |> result.unwrap(or: 10),
-            pattern: d
-              |> dict.get("pattern")
-              |> result.unwrap(""),
-          )
-        }
-        _ -> Website(url: "", interval: 0, pattern: "")
+      let url = case glaml.sugar(item, "url") {
+        Ok(glaml.DocNodeStr(val_str)) -> val_str
+        _ -> ""
       }
+      let pattern = case glaml.sugar(item, "pattern") {
+        Ok(glaml.DocNodeStr(val_str)) -> val_str
+        _ -> ""
+      }
+      let interval =
+        case glaml.sugar(item, "interval") {
+          Ok(glaml.DocNodeStr(val_str)) -> int.parse(val_str)
+          Ok(glaml.DocNodeInt(val_int)) -> Ok(val_int)
+          _ -> Error(Nil)
+        }
+        |> result.unwrap(or: 10)
+
+      Website(url:, interval:, pattern:)
     })
     |> list.filter(fn(w) { w.url != "" })
 
