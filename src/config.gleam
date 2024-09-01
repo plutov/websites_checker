@@ -1,5 +1,4 @@
 import glaml.{type DocNode}
-import gleam/dict
 import gleam/int
 import gleam/list
 import gleam/result
@@ -14,7 +13,6 @@ pub type Website {
 }
 
 pub type ConfigError {
-  ConfigError(message: String)
   ReadError
   ParseError
   MissingKey(which: String)

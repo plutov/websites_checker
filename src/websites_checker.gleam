@@ -1,4 +1,4 @@
-import config.{ConfigError, InvalidFileFormat, MissingKey, ParseError, ReadError}
+import config.{InvalidFileFormat, MissingKey, ParseError, ReadError}
 import crawler
 import database
 import gleam/erlang/os
@@ -24,7 +24,6 @@ pub fn main() {
     }
     Error(error) -> {
       let message = case error {
-        ConfigError(message) -> message
         ParseError -> "Failed to parse config file"
         MissingKey(which) -> which <> " key not found in config file"
         ReadError -> "Failed to read config file"
