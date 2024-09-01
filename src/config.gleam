@@ -70,17 +70,18 @@ pub fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
             })
 
           let d = dict.from_list(tuples)
-          let interval = case
-            int.base_parse(get_dict_optional_key(d, "interval"), 10)
-          {
-            Ok(value) -> value
-            Error(_) -> 10
-          }
 
           Website(
-            url: get_dict_optional_key(d, "url"),
-            interval: interval,
-            pattern: get_dict_optional_key(d, "pattern"),
+            url: d
+              |> dict.get("url")
+              |> result.unwrap(""),
+            interval: d
+              |> dict.get("interval")
+              |> result.then(int.parse)
+              |> result.unwrap(or: 10),
+            pattern: d
+              |> dict.get("pattern")
+              |> result.unwrap(""),
           )
         }
         _ -> Website(url: "", interval: 0, pattern: "")
@@ -89,13 +90,6 @@ pub fn parse_config_file(data: String) -> Result(List(Website), ConfigError) {
     |> list.filter(fn(w) { w.url != "" })
 
   Ok(websites)
-}
-
-fn get_dict_optional_key(d: dict.Dict(String, String), key: String) -> String {
-  case d |> dict.get(key) {
-    Ok(value) -> value
-    Error(_) -> ""
-  }
 }
 
 fn require_doc_node_seq(
