@@ -1,4 +1,4 @@
-import config
+import config.{InvalidFileFormat, MissingKey, ParseError, ReadError}
 import crawler
 import database
 import gleam/erlang/os
@@ -22,7 +22,15 @@ pub fn main() {
       ))
       config
     }
-    Error(e) -> panic as string.append("Failed to load config: ", e.message)
+    Error(error) -> {
+      let message = case error {
+        ParseError -> "Failed to parse config file"
+        MissingKey(which) -> which <> " key not found in config file"
+        ReadError -> "Failed to read config file"
+        InvalidFileFormat | config.InvalidValue -> "Invalid config file format"
+      }
+      panic as { "Failed to load config: " <> message }
+    }
   }
 
   // Run database migrations
